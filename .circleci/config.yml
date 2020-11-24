@@ -1,5 +1,8 @@
 version: 2.1
-            
+
+orbs:
+  slack: circleci/slack@4.1.1
+
 jobs:
   build-frontend:
     docker:
@@ -21,15 +24,52 @@ jobs:
   build-backend:
     docker:
       - image: circleci/node:13.8.0
+
+    #environment:
+      #GIT_COMMIT_DESC: git log --format=%B -n 1 $CIRCLE_SHA1
+
     steps:
       - checkout
-
       - run:
           name: Backend build
           command: |
             cd backend
             npm i
             npm run build
+            echo "export COMMIT_MESSAGE=\"$(git log --format=%B -n 1 $CIRCLE_SHA1)\"" >> $BASH_ENV
+            source $BASH_ENV
+
+      - slack/notify:
+          channel: C01FC0ZPENR
+          event: fail
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "Your job *$CIRCLE_JOB* has *faild* :octagonal_sign: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
+                  }
+                }
+              ]
+            }
+
+      - slack/notify:
+          channel: C01FC0ZPENR
+          event: pass
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "Your job *$CIRCLE_JOB* has *built* :white_check_mark: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
+                  }
+                }
+              ]
+            }
 
       - save_cache:
           key: v1-backend-build
@@ -101,13 +141,14 @@ jobs:
 workflows:
   default:
     jobs:
-      - build-frontend
-      #- build-backend
-      - test-frontend:
-          requires: [build-frontend]
-      #- test-backend:
-       #   requires: [build-backend]
-      #- scan-backend:
-       #   requires: [build-backend]
-      #- scan-frontend:
+      #- build-frontend
+      - build-backend:
+          context: basic
+          #- test-frontend:
+          # requires: [build-frontend]
+          # - test-backend:
+          #   requires: [build-backend]
+          # - scan-backend:
+          #     requires: [build-backend]
+          # - scan-frontend:
           #requires: [build-frontend]
