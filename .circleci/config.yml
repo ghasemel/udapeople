@@ -11,8 +11,8 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name backend-${CIRCLE_WORKFLOW_ID:0:7}
-            aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name backend-3e571a3
+            aws cloudformation delete-stack --stack-name frontend-3e571a3
             exit 0
 
   extract-commit-message:
@@ -104,6 +104,7 @@ jobs:
           key: v1-frontend-build
           paths:
             - ~/project/frontend/node_modules
+
       - slack-notification-fail
 
   build-backend:
@@ -142,6 +143,8 @@ jobs:
             npm i
             npm run test
 
+      - slack-notification-fail
+
   test-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -156,6 +159,8 @@ jobs:
           command: |
             cd backend
             npm run test
+
+      - slack-notification-fail
 
   scan-frontend:
     docker:
@@ -172,6 +177,7 @@ jobs:
             cd frontend
             npm audit --audit-level=critical
 
+      - slack-notification-fail
 
   scan-backend:
     docker:
@@ -187,6 +193,8 @@ jobs:
           command: |
             cd backend
             npm audit --audit-level=critical
+
+      - slack-notification-fail
 
   deploy-infrastructure:
     docker:
@@ -206,13 +214,13 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople \
-              --stack-name "backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+              --stack-name "backend-3e571a3" \
+              --parameter-overrides ID="3e571a3"
       - run:
           name: Add back-end ip to ansible inventory
           command: |
             backendDns=`aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --filters "Name=tag:Name,Values=backend-3e571a3" \
               --query "Reservations[*].Instances[*].[PublicDnsName]" \
               --output text`
 
@@ -237,25 +245,87 @@ jobs:
             aws cloudformation deploy \
             --template-file .circleci/files/frontend.yml \
             --tags project=udapeople \
-            --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-            --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-
+            --stack-name "frontend-3e571a3" \
+            --parameter-overrides ID="3e571a3"
+# {CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment
       - slack-notification-fail
+
+  configure-infrastructure:
+    docker:
+      - image: willhallonline/ansible:2.10-ubuntu-18.04
+    steps:
+      - checkout
+
+      - add_ssh_keys:
+          fingerprints:
+            - "12:ed:24:97:4a:cc:64:0a:0f:8d:c8:dd:ab:49:ca:4b"
+
+      - run:
+          name: Install dependencies
+          command: |
+            apt update
+            apt -y install jq tar gzip git curl
+
+      - attach_workspace:
+          at: ~/
+
+      - run:
+          name: Avoid hosts unknown
+          command: |
+            echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
+
+      - run:
+          name: Configure server
+          command: |
+            cd ~/project/.circleci/ansible
+            ansible-playbook configure-server.yml --inventory-file=inventory.txt
+
+      - slack-notification-fail
+
+#  run-migrations:
+#    docker:
+#    # Docker image here that supports NodeJS
+#    steps:
+#      # Checkout code from git
+#      - run:
+#          name: Run migrations
+#          command: |
+#            # Your code here
+#            exit 1
+#      - run:
+#          name: Send migration results to memstash
+#          command: |
+#            # Your code here
+#            exit 1
+      # Here's where you will add some code to rollback on failure
 
 workflows:
   default:
     jobs:
-      #- build-frontend
-      #- build-backend:
-          #context: basic
+#      - build-frontend:
+#          context: slack
+#      - build-backend:
+#          context: slack
+#      - test-frontend:
+#          context: slack
+#          requires: [build-frontend]
+#      - test-backend:
+#          context: slack
+#          requires: [build-backend]
+#      - scan-backend:
+#          context: slack
+#          requires: [test-backend]
+#      - scan-frontend:
+#          context: slack
+#          requires: [test-frontend]
       - deploy-infrastructure:
-          context: basic
-          #- test-frontend:
-          # requires: [build-frontend]
-          # - test-backend:
-          #   requires: [build-backend]
-          # - scan-backend:
-          #     requires: [build-backend]
-          # - scan-frontend:
-          #requires: [build-frontend]
+          context: slack
+#          requires:
+#            - scan-backend
+#            - scan-frontend
+#            - test-backend
+#            - test-frontend
+      - configure-infrastructure:
+          context: slack
+          requires: [deploy-infrastructure]

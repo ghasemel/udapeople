@@ -1,6 +1,6 @@
 ---
 
-- name: "configuration play." 
+- name: "configuration play"
   hosts: web
   user: ubuntu
   gather_facts: false
@@ -9,12 +9,17 @@
     - ansible_host_key_checking: false
     - ansible_stdout_callback: yaml
 
-  pre_tasks:
-    - name: "wait 600 seconds for target connection to become reachable/usable."
-      # Your code here
 
-    - name: "install python for Ansible."
-      # Your code here
+  # "set postgres environment variables"
+  environment:
+    ENVIRONMENT: production
+    TYPEORM_CONNECTION: postgres
+    TYPEORM_ENTITIES: ./src/modules/domain/**/*.entity.ts
+    TYPEORM_HOST: udapeople-prod.cu1ugcren7gy.us-west-2.rds.amazonaws.com
+    TYPEORM_PORT: 5432
+    TYPEORM_USERNAME: postgres
+    TYPEORM_PASSWORD: udapeople123
+    TYPEORM_DATABASE: udapeople-prod
 
   roles:
-    # Your code here
+    - configure-server
