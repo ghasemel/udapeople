@@ -23,7 +23,7 @@ Resources:
           CidrIp: 0.0.0.0/0
 
   EC2Instance:
-    Type: AWS::EC2::Instancevv
+    Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
       SecurityGroups:
