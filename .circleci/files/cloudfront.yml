@@ -1,6 +1,13 @@
 Description: >
   Cloudfront distribution for UdaPeople.
 
+# how to run
+#  aws cloudformation deploy \
+#  --template-file .circleci/files/cloudfront.yml \
+#  --tags project=udapeople \
+#  --stack-name "cloudfront-67wqteuq3ea76tu" \
+#  --parameter-overrides WorkflowID="67wqteuq3ea76tu"
+
 Parameters:
   WorkflowID:
     Description: Unique identifier.
@@ -8,7 +15,6 @@ Parameters:
 
 
 Resources:
-  
   CloudFrontOriginAccessIdentity:
     Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
     Properties:
