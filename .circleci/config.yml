@@ -145,6 +145,11 @@ jobs:
       - checkout
 
       - run:
+          name: install prerequsites
+          command: |
+            yum -y install tar gzip
+
+      - run:
           name: Ensure back-end infrastructure exists
           command: |
             # build-backend:
@@ -170,14 +175,15 @@ jobs:
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --query "Reservations[*].Instances[*].[PublicDnsName]" \
               --output text`
-            echo $backendDns
+
             echo $backendDns >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
+
             # put it in the shared memory
             curl -H "Content-Type: text/plain" \
-            -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
-            --request PUT \
-            --data "$backendDns" https://api.memstash.io/values/backendDns
+              -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
+              --request PUT \
+              --data "$backendDns" https://api.memstash.io/values/backendDns
 
       - persist_to_workspace:
           root: ~/
