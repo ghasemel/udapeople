@@ -6,15 +6,66 @@ orbs:
 commands:
   destroy-environment:
     description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-      #parameters:
-    # Add parameter here
     steps:
       - run:
           name: Destroy environments
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name backend-${CIRCLE_WORKFLOW_ID:0:7}
-            # aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
+            exit 0
+
+  extract-commit-message:
+    description: Extract commit message
+    steps:
+      - run:
+          name: Extract commit message
+          when: always
+          command: |
+            echo "export COMMIT_MESSAGE=\"$(git log --format=%B -n 1 $CIRCLE_SHA1)\"" >> $BASH_ENV
+            source $BASH_ENV
+
+  slack-notification-fail:
+    description: Send notification to Slack
+    steps:
+      - extract-commit-message
+
+      - slack/notify:
+          channel: C01FC0ZPENR
+          event: fail
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "Your job *$CIRCLE_JOB* has *faild* :octagonal_sign: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
+                  }
+                }
+              ]
+            }
+
+  slack-notification-pass:
+    description: Send notification to Slack
+    steps:
+      - extract-commit-message
+
+      - slack/notify:
+          channel: C01FC0ZPENR
+          event: pass
+          custom: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": "Your job *$CIRCLE_JOB* has *built* :white_check_mark: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
+                  }
+                }
+              ]
+            }
 
 #  revert-migrations:
 #    description: Revert the last migration if successfully run in the current workflow.
@@ -53,6 +104,7 @@ jobs:
           key: v1-frontend-build
           paths:
             - ~/project/frontend/node_modules
+      - slack-notification-fail
 
   build-backend:
     docker:
@@ -66,45 +118,13 @@ jobs:
             cd backend
             npm i
             npm run build
-            echo "export COMMIT_MESSAGE=\"$(git log --format=%B -n 1 $CIRCLE_SHA1)\"" >> $BASH_ENV
-            source $BASH_ENV
-
-      - slack/notify:
-          channel: C01FC0ZPENR
-          event: fail
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                      "type": "mrkdwn",
-                      "text": "Your job *$CIRCLE_JOB* has *faild* :octagonal_sign: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
-                  }
-                }
-              ]
-            }
-
-      - slack/notify:
-          channel: C01FC0ZPENR
-          event: pass
-          custom: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                      "type": "mrkdwn",
-                      "text": "Your job *$CIRCLE_JOB* has *built* :white_check_mark: (<$CIRCLE_BUILD_URL|build #$CIRCLE_BUILD_NUM>)\n\nrepo: $CIRCLE_REPOSITORY_URL\n\nbranch: $CIRCLE_BRANCH\n\ncommitter: $CIRCLE_USERNAME\n\ncommit message: $COMMIT_MESSAGE"
-                  }
-                }
-              ]
-            }
 
       - save_cache:
           key: v1-backend-build
           paths:
             - ~/project/backend/node_modules
+
+      - slack-notification-fail
 
   test-frontend:
     docker:
@@ -177,7 +197,7 @@ jobs:
       - run:
           name: Install prerequsites
           command: |
-            yum -y install tar gzip
+            yum -y install tar gzip jq git
 
       - run:
           name: Ensure back-end infrastructure exists
@@ -188,16 +208,6 @@ jobs:
               --tags project=udapeople \
               --stack-name "backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-#      - run:
-#          name: Ensure front-end infrastructure exist
-#          command: |
-#            # build-frontend:
-#            aws cloudformation deploy \
-#            --template-file .circleci/files/frontend.yml \
-#            --tags project=udapeople \
-#            --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
-#            --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-
       - run:
           name: Add back-end ip to ansible inventory
           command: |
@@ -220,8 +230,18 @@ jobs:
           paths:
             - project/.circleci/ansible/inventory.txt
 
+      - run:
+          name: Ensure front-end infrastructure exist
+          command: |
+            # build-frontend:
+            aws cloudformation deploy \
+            --template-file .circleci/files/frontend.yml \
+            --tags project=udapeople \
+            --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+
       - destroy-environment
-          #event: fail
+      - slack-notification-fail
 
 workflows:
   default:
@@ -229,7 +249,8 @@ workflows:
       #- build-frontend
       #- build-backend:
           #context: basic
-      - deploy-infrastructure
+      - deploy-infrastructure:
+          context: basic
           #- test-frontend:
           # requires: [build-frontend]
           # - test-backend:
