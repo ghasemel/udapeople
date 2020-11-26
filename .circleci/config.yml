@@ -169,7 +169,7 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: frontend-build
+          key: v1-frontend-build
 
       - run:
           name: Scan frontend depedencies
@@ -186,7 +186,7 @@ jobs:
       - checkout
 
       - restore_cache:
-          key: backend-build
+          key: v1-backend-build
 
       - run:
           name: Scan backend depedencies
@@ -283,16 +283,22 @@ jobs:
 
       - slack-notification-fail
 
-#  run-migrations:
-#    docker:
-#    # Docker image here that supports NodeJS
-#    steps:
-#      # Checkout code from git
-#      - run:
-#          name: Run migrations
-#          command: |
-#            # Your code here
-#            exit 1
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+
+#      - restore_cache:
+#          key: v1-backend-build
+
+      - run:
+          name: Run migrations
+          command: |
+            cd backend
+            npm i
+            npm run migrations
+
 #      - run:
 #          name: Send migration results to memstash
 #          command: |
@@ -329,3 +335,7 @@ workflows:
       - configure-infrastructure:
           context: slack
           requires: [deploy-infrastructure]
+
+      - run-migrations:
+          context: slack
+          requires: [ configure-infrastructure ]
