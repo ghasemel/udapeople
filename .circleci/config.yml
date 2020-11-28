@@ -67,24 +67,26 @@ commands:
               ]
             }
 
-#  revert-migrations:
-#    description: Revert the last migration if successfully run in the current workflow.
-#      #parameters:
-#    # Add parameter here
-#    steps:
-#      - run:
-#          name: Revert migrations
-#          # Add when this will run
-#          command: |
-#            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-#            SUCCESS = 1
-#            if(( $SUCCESS==1 ));
-#            then
-#            #  cd ~/project/backend
-#            #  npm install
-#            #  Add revert code here. You can find this in the Getting Started section.
-#              exit 1
-#            fi
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+      #parameters:
+    # Add parameter here
+    steps:
+      - run:
+          name: Revert migrations
+          event: fail
+          command: |
+            # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
+            SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}`
+            if(( $SUCCESS==1 ));
+            then
+              cd ~/project/backend
+              npm install
+              # revert migration
+              npm run migrations:revert
+            fi
+
+
 
 
 jobs:
@@ -219,19 +221,19 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            backendDns=`aws ec2 describe-instances \
+            BACKEND_IP=`aws ec2 describe-instances \
               --filters "Name=tag:Name,Values=backend-3e571a3" \
               --query "Reservations[*].Instances[*].[PublicDnsName]" \
               --output text`
 
-            echo $backendDns >> .circleci/ansible/inventory.txt
+            echo $BACKEND_IP >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
 
             # put it in the shared memory
             curl -H "Content-Type: text/plain" \
               -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
               --request PUT \
-              --data "$backendDns" https://api.memstash.io/values/backendDns
+              --data "$BACKEND_IP" https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID}
 
       - persist_to_workspace:
           root: ~/
@@ -312,7 +314,101 @@ jobs:
                 --request PUT \
                 --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
             fi
-      # Here's where you will add some code to rollback on failure
+
+      - revert-migrations
+
+
+  #  can-frontend:
+  deploy-frontend:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sL https://rpm.nodesource.com/setup_14.x | bash -
+            yum -y install nodejs npm tar gzip jq git
+
+      - run:
+          name: Get backend url
+          command: |
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP`
+            export API_URL="http://${BACKEND_IP}:3030"
+            echo "${API_URL}"
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd frontend
+            npm i
+            npm run build
+            # deploy to s3 bucket
+            aws s3 cp ./dist s3://udapeople-3e571a3 --recursive
+
+      - slack-notification-fail
+
+      - run:
+          name: rollback on frontend-deploy failure
+          when: on_fail
+          command: |
+            aws s3 rm s3://udapeople-3e571a3 --recursive
+
+#  deploy-backend:
+#    docker:
+#    # Docker image here that supports Ansible
+#    steps:
+#      # Checkout code from git
+#      # Add ssh keys with fingerprint
+#      # attach workspace
+#      - run:
+#          name: Install dependencies
+#          command: |
+#            # your code here
+#      - run:
+#          name: Deploy backend
+#          command: |
+#            # your code here
+#      # Here's where you will add some code to rollback on failure
+#
+#  #  scan-backend:
+#  smoke-test:
+#    docker:
+#    # Lightweight Docker image
+#    steps:
+#      # Checkout code from git
+#      - run:
+#          name: Install dependencies
+#          command: |
+#            # your code here
+#      - run:
+#          name: Get backend url
+#          command: |
+#            # your code here
+#      - run:
+#          name: Backend smoke test.
+#          command: |
+#            # your code here
+#      - run:
+#          name: Frontend smoke test.
+#          command: |
+#            # your code here
+#      # Here's where you will add some code to rollback on failure
+#
+#  #  deploy-infrastructure:
+#  cloudfront-update:
+#    docker:
+#    # Docker image here that supports AWS CLI
+#    steps:
+#      # Checkout code from git
+#      - run:
+#          name: Install dependencies
+#          command: |
+#            # your code here
+#      - run:
+#          name: Update cloudfront distribution
+#          command: |
+#            # your code here
+#      # Here's where you will add some code to rollback on failure
 
 workflows:
   default:
@@ -343,7 +439,9 @@ workflows:
 #      - configure-infrastructure:
 #          context: slack
 #          requires: [deploy-infrastructure]
-
-      - run-migrations:
-          context: slack
+#      - run-migrations:
+#          context: slack
 #          requires: [ configure-infrastructure ]
+      - deploy-frontend:
+          context: slack
+#          requires: [ run-migrations ]
