@@ -336,6 +336,14 @@ jobs:
             BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP`
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
+
+      - run:
+          name: make a backup of current objects
+          command: |
+            mkdir backup-${CIRCLE_WORKFLOW_ID:0:7}
+            aws s3 cp s3://udapeople-3e571a3 ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
+            aws s3 rm s3://udapeople-3e571a3 --recursive
+
       - run:
           name: Deploy frontend objects
           command: |
@@ -352,6 +360,7 @@ jobs:
           when: on_fail
           command: |
             aws s3 rm s3://udapeople-3e571a3 --recursive
+            aws s3 cp ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-3e571a3 --recursive
 
 #  deploy-backend:
 #    docker:
