@@ -1,8 +1,17 @@
-- name: "BEDPL100.01 deploy backend app"
+- name: "BEDPL100.01 make directory"
+  become: true
+  shell: mkdir -p /app/udapeople/
+
+- name: "BEDPL100.02 deploy backend app"
   become: true
   unarchive:
     src: ../../backend/app.tar.gz
     dest: /app/udapeople/
     owner: ubuntu
     group: ubuntu
-    mode: 0600
+    mode: 0666
+
+- name: "BEDPL100.03 run backend app"
+  shell: |
+    cd /app/udapeople/
+    pm2 start main.js

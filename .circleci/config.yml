@@ -78,7 +78,7 @@ commands:
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
             SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_3e571a3`
-            if(( $SUCCESS==1 ));
+            if [[ $SUCCESS == 1 ]];
             then
               cd ~/project/backend
               npm install
@@ -314,19 +314,16 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-            MIGRATION_COUNT=`grep "has been executed successfully" /tmp/migration.log | wc -l`
-            echo $MIGRATION_COUNT
-            if (( $MIGRATION_COUNT > 0 ));
+            MIGRATION_COUNT=`grep -c "has been executed successfully" /tmp/migration.log || true`
+            echo "migrations count: ${MIGRATION_COUNT}"
+            if [[ $MIGRATION_COUNT -gt 0 ]];
             then
               # put it in the shared memory
               curl -H "Content-Type: text/plain" \
-                -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
-                --request PUT \
-                --data "1" https://api.memstash.io/values/migration_3e571a3
+               -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
+               --request PUT --data "1" https://api.memstash.io/values/migration_3e571a3
             fi
-
       - revert-migrations
-
 
   deploy-frontend:
     docker:
@@ -402,6 +399,10 @@ jobs:
           name: Build backend
           command: |
             cd backend
+            npm i rxjs@^6.0.0
+            npm i reflect-metadata@^0.1.12
+            npm i @nestjs/common@^7.0.0
+            npm i @nestjs/core
             npm i
             npm run build
             cd dist
@@ -415,28 +416,36 @@ jobs:
 
       - slack-notification-fail
 
+  smoke-test:
+    docker:
+      - image: alpine
+    steps:
 
-#  smoke-test:
-#    docker:
-#    # Lightweight Docker image
-#    steps:
-#      # Checkout code from git
-#      - run:
-#          name: Install dependencies
-#          command: |
-#            # your code here
-#      - run:
-#          name: Get backend url
-#          command: |
-#            # your code here
-#      - run:
-#          name: Backend smoke test.
-#          command: |
-#            # your code here
-#      - run:
-#          name: Frontend smoke test.
-#          command: |
-#            # your code here
+      - run:
+          name: Install dependencies
+          command: |
+            apk --no-cache add jq tar gzip git curl
+
+      - run:
+          name: Backend smoke test
+          command: |
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_3e571a3`
+            echo $BACKEND_IP
+            curl -s https://${BACKEND_IP}:3030/api/status
+      - run:
+          name: Frontend smoke test
+          command: |
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
+            S3_URL="udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
+            echo $S3_URL
+            if curl -s ${S3_URL} | grep "Welcome";
+            then
+              return 1
+            else
+              return 0
+            fi
+
+      - slack-notification-fail
       # Here's where you will add some code to rollback on failure
 
 #  #  deploy-infrastructure:
@@ -494,3 +503,6 @@ workflows:
       - deploy-backend:
           context: slack
 #          requires: [ deploy-frontend ]
+      - smoke-test:
+          context: slack
+          requires: [ deploy-backend ]
