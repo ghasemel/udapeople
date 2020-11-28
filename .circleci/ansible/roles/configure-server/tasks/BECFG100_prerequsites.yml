@@ -1,22 +1,22 @@
-- name: "BEUP100.01 update"
+- name: "BECFG100.01 update"
   become: true
   shell: |
     apt-get -y update
 
-- name: "BEUP100.02 install python3.6"
+- name: "BECFG100.02 install python3.6"
   become: true
   shell: |
     apt-get -y install python3.6
 
-- name: "BEUP100.03 install nodejs"
+- name: "BECFG100.03 install nodejs"
   become: true
   shell: |
     apt-get -y install build-essential
     apt-get -y install curl openssl libssl-dev
-    apt-get -y install nodejs
-    apt-get -y install npm
+    curl -sL https://deb.nodesource.com/setup_14.x | bash -
+    apt -y install nodejs
 
-- name: "BEUP100.04 install pm2"
+- name: "BECFG100.04 install pm2"
   become: true
   shell: |
     npm install pm2 -g

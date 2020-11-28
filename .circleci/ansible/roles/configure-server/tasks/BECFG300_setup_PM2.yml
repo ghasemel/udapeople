@@ -1,4 +1,4 @@
-- name: "BEUP300.01 create safe user 'udapeople'"
+- name: "BECFG300.01 create safe user 'udapeople'"
   become: true
   user:
     name: udapeople
@@ -10,7 +10,7 @@
     createhome: yes
     home: /home/udapeople
 
-- name: "BEUP300.02 give permission to port 80"
+- name: "BECFG300.02 give permission to port 80"
   become: true
   shell: |
     sudo apt-get install libcap2-bin

@@ -1,0 +1,8 @@
+- name: "BEDPL100.01 deploy backend app"
+  become: true
+  unarchive:
+    src: ../../backend/app.tar.gz
+    dest: /app/udapeople/
+    owner: ubuntu
+    group: ubuntu
+    mode: 0600

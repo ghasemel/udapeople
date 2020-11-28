@@ -74,10 +74,10 @@ commands:
     steps:
       - run:
           name: Revert migrations
-          event: fail
+          when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}`
+            SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_3e571a3`
             if(( $SUCCESS==1 ));
             then
               cd ~/project/backend
@@ -86,18 +86,18 @@ commands:
               npm run migrations:revert
             fi
 
-  revert-frontend-deployment:
-    description: Rollback method for frontend-deployment
-    #parameters:
-    # Add parameter here
-    steps:
-      - run:
-          name: rollback frontend-deployment
-          when: on_fail
-          command: |
-            cd frontend
-            aws s3 rm s3://udapeople-3e571a3 --recursive
-            aws s3 cp ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-3e571a3 --recursive
+#  revert-frontend-deployment:
+#    description: Rollback method for frontend-deployment
+#    #parameters:
+#    # Add parameter here
+#    steps:
+#      - run:
+#          name: rollback frontend-deployment
+#          when: on_fail
+#          command: |
+#            cd frontend
+#            aws s3 rm s3://udapeople-3e571a3 --recursive
+#            aws s3 cp ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-3e571a3 --recursive
 
 jobs:
   build-frontend:
@@ -243,7 +243,7 @@ jobs:
             curl -H "Content-Type: text/plain" \
               -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
               --request PUT \
-              --data "$BACKEND_IP" https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID}
+              --data "$BACKEND_IP" https://api.memstash.io/values/BACKEND_IP_3e571a3
 
       - persist_to_workspace:
           root: ~/
@@ -314,21 +314,20 @@ jobs:
       - run:
           name: Send migration results to memstash
           command: |
-            count=`grep "has been executed successfully" /tmp/migration.log | wc -l`
-            echo $count
-            echo ${CIRCLE_WORKFLOW_ID}
-            if [ $count > 0 ]; then \
+            MIGRATION_COUNT=`grep "has been executed successfully" /tmp/migration.log | wc -l`
+            echo $MIGRATION_COUNT
+            if (( $MIGRATION_COUNT > 0 ));
+            then
               # put it in the shared memory
               curl -H "Content-Type: text/plain" \
                 -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
                 --request PUT \
-                --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+                --data "1" https://api.memstash.io/values/migration_3e571a3
             fi
 
       - revert-migrations
 
 
-  #  can-frontend:
   deploy-frontend:
     docker:
       - image: amazon/aws-cli
@@ -348,24 +347,21 @@ jobs:
             echo "${API_URL}"
 
       - run:
-          name: Make a backup of current objects
+          name: Build frontend
           command: |
             cd frontend
-            mkdir backup-${CIRCLE_WORKFLOW_ID:0:7}
-            aws s3 cp s3://udapeople-3e571a3 ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
-            aws s3 rm s3://udapeople-3e571a3 --recursive
+            npm i
+            npm run build
 
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend
-            npm i
-            npm run build
             # deploy to s3 bucket
             aws s3 cp ./dist s3://udapeople-3e571a3 --recursive
 
       - run:
-          name: S3 bucket url
+          name: Create S3 bucket url
           command: |
             LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
             S3_URL="udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
@@ -375,7 +371,6 @@ jobs:
             https://api.memstash.io/values/S3_URL_3e571a3
 
       - slack-notification-fail
-      - revert-frontend-deployment
 
   deploy-backend:
     docker:
@@ -392,6 +387,8 @@ jobs:
           command: |
             apt update
             apt -y install jq tar gzip git curl
+            curl -sL https://deb.nodesource.com/setup_14.x | bash -
+            apt -y install nodejs
 
       - attach_workspace:
           at: ~/
@@ -402,15 +399,23 @@ jobs:
             echo -e "Host *\n\tStrictHostKeyChecking no\n" > ~/.ssh/config
 
       - run:
+          name: Build backend
+          command: |
+            cd backend
+            npm i
+            npm run build
+            cd dist
+            tar -czvf ../app.tar.gz ./*
+
+      - run:
           name: Deploy backend
           command: |
             cd ~/project/.circleci/ansible
-            ansible-playbook configure-server.yml --inventory-file=inventory.txt
+            ansible-playbook deploy-backend.yml --inventory-file=inventory.txt
 
       - slack-notification-fail
-      # Here's where you will add some code to rollback on failure
-#
-#  #  scan-backend:
+
+
 #  smoke-test:
 #    docker:
 #    # Lightweight Docker image
@@ -432,8 +437,8 @@ jobs:
 #          name: Frontend smoke test.
 #          command: |
 #            # your code here
-#      # Here's where you will add some code to rollback on failure
-#
+      # Here's where you will add some code to rollback on failure
+
 #  #  deploy-infrastructure:
 #  cloudfront-update:
 #    docker:

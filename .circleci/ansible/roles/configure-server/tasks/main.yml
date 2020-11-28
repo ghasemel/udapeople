@@ -1,8 +1,8 @@
-- name: BEUP100 udapeople prerequisites
-  include_tasks: BEUP100_prerequsites.yml
+- name: BECFG100 udapeople prerequisites
+  include_tasks: BECFG100_prerequsites.yml
 
-#- name: BEUP300 setup pm2
-  #include_tasks: BEUP300_setup_PM2.yml
+#- name: BECFG300 setup pm2
+  #include_tasks: BECFG300_setup_PM2.yml
 
-#- name: BEUP400 run application
-#  include_tasks: BEUP400_run_app.yml
+#- name: BECFG400 run application
+#  include_tasks: BEDPL100_deploy_app.yml
