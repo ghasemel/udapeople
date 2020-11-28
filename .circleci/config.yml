@@ -285,25 +285,33 @@ jobs:
 
   run-migrations:
     docker:
-      - image: doctrine/nodejs-aws-cli:latest
+      - image: circleci/node:13.8.0
     steps:
       - checkout
 
-#      - restore_cache:
-#          key: v1-backend-build
+      - restore_cache:
+          key: v1-backend-build
 
       - run:
           name: Run migrations
           command: |
             cd backend
             npm i
-            npm run migrations
+            npm run migrations > /tmp/migration.log
 
-#      - run:
-#          name: Send migration results to memstash
-#          command: |
-#            # Your code here
-#            exit 1
+      - run:
+          name: Send migration results to memstash
+          command: |
+            count=`grep "has been executed successfully" /tmp/migration.log | wc -l`
+            echo $count
+            echo ${CIRCLE_WORKFLOW_ID}
+            if [ $count > 0 ]; then \
+              # put it in the shared memory
+              curl -H "Content-Type: text/plain" \
+                -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
+                --request PUT \
+                --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID}
+            fi
       # Here's where you will add some code to rollback on failure
 
 workflows:
@@ -325,17 +333,17 @@ workflows:
 #      - scan-frontend:
 #          context: slack
 #          requires: [test-frontend]
-      - deploy-infrastructure:
-          context: slack
+#      - deploy-infrastructure:
+#          context: slack
 #          requires:
 #            - scan-backend
 #            - scan-frontend
 #            - test-backend
 #            - test-frontend
-      - configure-infrastructure:
-          context: slack
-          requires: [deploy-infrastructure]
+#      - configure-infrastructure:
+#          context: slack
+#          requires: [deploy-infrastructure]
 
       - run-migrations:
           context: slack
-          requires: [ configure-infrastructure ]
+#          requires: [ configure-infrastructure ]
