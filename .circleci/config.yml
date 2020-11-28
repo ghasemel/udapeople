@@ -338,8 +338,9 @@ jobs:
             echo "${API_URL}"
 
       - run:
-          name: make a backup of current objects
+          name: Make a backup of current objects
           command: |
+            cd frontend
             mkdir backup-${CIRCLE_WORKFLOW_ID:0:7}
             aws s3 cp s3://udapeople-3e571a3 ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ --recursive
             aws s3 rm s3://udapeople-3e571a3 --recursive
@@ -353,12 +354,23 @@ jobs:
             # deploy to s3 bucket
             aws s3 cp ./dist s3://udapeople-3e571a3 --recursive
 
+      - run:
+          name: S3 bucket url
+          command: |
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
+            S3_URL="udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
+            echo $S3_URL
+            curl -H "Content-Type: text/plain" -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
+            --request PUT --data "$S3_URL" \
+            https://api.memstash.io/values/S3_URL
+
       - slack-notification-fail
 
       - run:
           name: rollback on frontend-deploy failure
           when: on_fail
           command: |
+            cd frontend
             aws s3 rm s3://udapeople-3e571a3 --recursive
             aws s3 cp ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-3e571a3 --recursive
 
