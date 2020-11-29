@@ -399,10 +399,6 @@ jobs:
           name: Build backend
           command: |
             cd backend
-            npm i rxjs@^6.0.0
-            npm i reflect-metadata@^0.1.12
-            npm i @nestjs/common@^7.0.0
-            npm i @nestjs/core
             npm i
             npm run build
             cd dist
