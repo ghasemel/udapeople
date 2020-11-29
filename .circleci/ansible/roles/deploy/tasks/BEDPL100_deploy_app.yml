@@ -9,7 +9,7 @@
     dest: /app/udapeople/
     owner: ubuntu
     group: ubuntu
-    mode: 0666
+    mode: 0555
 
 - name: "BEDPL100.03 run backend app"
   shell: |

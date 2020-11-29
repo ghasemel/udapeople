@@ -333,7 +333,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            curl -sL https://rpm.nodesource.com/setup_14.x | bash -
+            curl -sL https://rpm.nodesource.com/setup_12.x | bash -
             yum -y install nodejs npm tar gzip jq git
 
       - run:
@@ -384,7 +384,7 @@ jobs:
           command: |
             apt update
             apt -y install jq tar gzip git curl
-            curl -sL https://deb.nodesource.com/setup_14.x | bash -
+            curl -sL https://deb.nodesource.com/setup_12.x | bash -
             apt -y install nodejs
 
       - attach_workspace:
