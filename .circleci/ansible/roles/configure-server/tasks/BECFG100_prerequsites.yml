@@ -11,20 +11,24 @@
 - name: "BECFG100.03 install nodejs"
   become: true
   shell: |
-    apt-get -y install build-essential
-    apt-get -y install curl openssl libssl-dev
-    curl -sL https://deb.nodesource.com/setup_14.x | bash -
-    apt -y install nodejs
+    apt-get install -y build-essential
+    apt-get install -y curl openssl libssl-dev
+    curl -sL https://deb.nodesource.com/setup_12.x | bash -
+    apt-get install -y nodejs
 
 - name: "BECFG100.04 install pm2"
   become: true
   shell: |
     npm install pm2 -g
 
-- name: "BECFG100.05 set environment variables"
+- name: "BECFG100.05 Test for lines"
+  become_user: ubuntu
+  shell: grep -c "^export TYPEORM_CONNECTION" /home/ubuntu/.bashrc || true
+  register: test_grep
+
+- name: "BECFG100.06 set environment variables"
   become_user: ubuntu
   shell: |
-    pwd
     echo "# environment variables for udapeople" >> /home/ubuntu/.bashrc
     echo "export NODE_ENV=production" >> /home/ubuntu/.bashrc
     echo "export ENVIRONMENT=production" >> /home/ubuntu/.bashrc
@@ -35,4 +39,5 @@
     echo "export TYPEORM_USERNAME={{ lookup('env', 'TYPEORM_USERNAME') }}" >> /home/ubuntu/.bashrc
     echo "export TYPEORM_PASSWORD={{ lookup('env', 'TYPEORM_PASSWORD') }}" >> /home/ubuntu/.bashrc
     echo "export TYPEORM_DATABASE={{ lookup('env', 'TYPEORM_DATABASE') }}" >> /home/ubuntu/.bashrc
-    source /home/ubuntu/.bashrc
+    source ~/.bashrc
+  when: test_grep.stdout == "0"

@@ -480,26 +480,26 @@ workflows:
 #      - scan-frontend:
 #          context: slack
 #          requires: [test-frontend]
-#      - deploy-infrastructure:
-#          context: slack
+      - deploy-infrastructure:
+          context: slack
 #          requires:
 #            - scan-backend
 #            - scan-frontend
 #            - test-backend
 #            - test-frontend
-#      - configure-infrastructure:
-#          context: slack
-#          requires: [deploy-infrastructure]
-#      - run-migrations:
-#          context: slack
-#          requires: [ configure-infrastructure ]
-#      - deploy-frontend:
-#          context: slack
-#          requires: [ run-migrations ]
+      - configure-infrastructure:
+          context: slack
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          context: slack
+          requires: [ configure-infrastructure ]
+      - deploy-frontend:
+          context: slack
+          requires: [ run-migrations ]
 
       - deploy-backend:
           context: slack
-#          requires: [ deploy-frontend ]
+          requires: [ deploy-frontend ]
       - smoke-test:
           context: slack
           requires: [ deploy-backend ]

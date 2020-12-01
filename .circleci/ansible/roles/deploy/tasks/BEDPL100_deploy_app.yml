@@ -1,18 +1,19 @@
 - name: "BEDPL100.01 make directory"
-  become: true
-  shell: mkdir -p /app/udapeople/
+  become_user: ubuntu
+  shell: mkdir -p ~/udapeople/
 
 - name: "BEDPL100.02 deploy backend app"
-  become: true
+  become_user: ubuntu
   unarchive:
     src: ../../backend/app.tar.gz
-    dest: /app/udapeople/
+    dest: ~/udapeople/
     owner: ubuntu
     group: ubuntu
     mode: 0555
 
 - name: "BEDPL100.03 run backend app"
+  become_user: ubuntu
   shell: |
-    cd /app/udapeople/
+    cd ~/udapeople/
     npm i
     pm2 start main.js --update-env
