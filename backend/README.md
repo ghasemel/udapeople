@@ -191,14 +191,21 @@ To switch your backend to use the "Application" in Auth0, you should simply chan
 
 Here is the way how it works using pm2
 1. set the env variables (I did it in .bash_profile)
-_export ENVIRONMENT=production
+export ENVIRONMENT=production
+
 export TYPEORM_CONNECTION=postgres
+
 export TYPEORM_ENTITIES="./modules/domain/**/*.entity*.{ts,js}"
+
 export TYPEORM_HOST=host
+
 export TYPEORM_PORT=5432
+
 export TYPEORM_USERNAME=postgres
+
 export TYPEORM_PASSWORD=password
-export TYPEORM_DATABASE=udapeople_prod_
+
+export TYPEORM_DATABASE=udapeople_prod
 
 2. `cd backend` 
 3. `npm i`
