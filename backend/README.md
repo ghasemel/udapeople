@@ -193,7 +193,7 @@ Here is the way how it works using pm2
 1. set the env variables (I did it in .bash_profile)
 _export ENVIRONMENT=production
 export TYPEORM_CONNECTION=postgres
-export TYPEORM_ENTITIES="./modules/domain/**/**/*.entity*.{ts,js}"
+export TYPEORM_ENTITIES="./modules/domain/**/*.entity*.{ts,js}"
 export TYPEORM_HOST=host
 export TYPEORM_PORT=5432
 export TYPEORM_USERNAME=postgres
