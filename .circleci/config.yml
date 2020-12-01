@@ -401,6 +401,7 @@ jobs:
             cd backend
             npm i
             npm run build
+            cp package* ./dist
             cd dist
             tar -czvf ../app.tar.gz ./*
 

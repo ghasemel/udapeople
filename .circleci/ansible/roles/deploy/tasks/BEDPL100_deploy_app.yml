@@ -14,4 +14,5 @@
 - name: "BEDPL100.03 run backend app"
   shell: |
     cd /app/udapeople/
-    pm2 start main.js
+    npm i
+    pm2 start main.js --update-env
