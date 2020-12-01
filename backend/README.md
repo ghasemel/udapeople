@@ -202,7 +202,7 @@ export TYPEORM_DATABASE=udapeople_prod_
 
 2. `cd backend` 
 3. `npm i`
-3. `npm build`
+3. `npm run build`
 4. `cp package* ./dist`
 5. `cd dist`
 6. `npm i`
