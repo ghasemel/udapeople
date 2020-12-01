@@ -187,7 +187,7 @@ To switch your backend to use the "Application" in Auth0, you should simply chan
 
 
 
-## How to run backend usin pm2:
+## How to run backend using pm2:
 
 Here is the way how it works using pm2
 1. set the env variables (I did it in .bash_profile)
