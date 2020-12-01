@@ -184,3 +184,29 @@ curl --request POST \
 (This only works with an "API" in Auth0. It will not work with an "Application" in Auth0 because they disable `client_credentials` grants by default and we have not found a way to enable that.)
 
 To switch your backend to use the "Application" in Auth0, you should simply change the clientId, clientSecret, and audience in your environment variables.
+
+
+
+## How to run backend usin pm2:
+
+Here is the way how it works using pm2
+1. set the env variables (I did it in .bash_profile)
+_export ENVIRONMENT=production
+export TYPEORM_CONNECTION=postgres
+export TYPEORM_ENTITIES="./modules/domain/**/**/*.entity*.{ts,js}"
+export TYPEORM_HOST=host
+export TYPEORM_PORT=5432
+export TYPEORM_USERNAME=postgres
+export TYPEORM_PASSWORD=password
+export TYPEORM_DATABASE=udapeople_prod_
+
+2. `cd backend` 
+3. `npm i`
+3. `npm build`
+4. `cp package* ./dist`
+5. `cd dist`
+6. `npm i`
+7. `pm2 start main.js --update-env`
+8. look into the pm2 log to be sure if it's running: `~/.pm2/logs/main-out.log`
+
+For AWS EC2 server you only need to copy the dist directory + package* files and then you can start on step 6
