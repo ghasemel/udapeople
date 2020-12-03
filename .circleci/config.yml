@@ -297,12 +297,18 @@ jobs:
 
   run-migrations:
     docker:
-      - image: circleci/node:13.8.0
+      - image: amazon/aws-cli
     steps:
       - checkout
 
       - restore_cache:
           key: v1-backend-build
+
+      - run:
+          name: Install dependencies
+          command: |
+            curl -sL https://rpm.nodesource.com/setup_12.x | bash -
+            yum -y install nodejs npm tar gzip jq git
 
       - run:
           name: Run migrations
@@ -323,7 +329,9 @@ jobs:
                -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
                --request PUT --data "1" https://api.memstash.io/values/migration_3e571a3
             fi
-      - revert-migrations
+      - slack-notification-fail
+      #- revert-migrations
+      #- destroy-environment      
 
   deploy-frontend:
     docker:
@@ -368,7 +376,8 @@ jobs:
             https://api.memstash.io/values/S3_URL_3e571a3
 
       - slack-notification-fail
-
+      #- revert-migrations
+      #- destroy-environment
   deploy-backend:
     docker:
       - image: willhallonline/ansible:2.10-ubuntu-18.04
@@ -412,6 +421,8 @@ jobs:
             ansible-playbook deploy-backend.yml --inventory-file=inventory.txt
 
       - slack-notification-fail
+      #- revert-migrations
+      #- destroy-environment
 
   smoke-test:
     docker:
@@ -439,7 +450,8 @@ jobs:
             
 
       - slack-notification-fail
-      # Here's where you will add some code to rollback on failure
+      #- revert-migrations
+      #- destroy-environment      
 
 #  #  deploy-infrastructure:
 #  cloudfront-update:
