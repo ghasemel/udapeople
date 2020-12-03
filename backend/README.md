@@ -195,7 +195,7 @@ export ENVIRONMENT=production
 
 export TYPEORM_CONNECTION=postgres
 
-export TYPEORM_ENTITIES="./modules/domain/**/*.entity*.{ts,js}"
+export TYPEORM_ENTITIES="./modules/domain/**/*.entity\*.{ts,js}"
 
 export TYPEORM_HOST=host
 
