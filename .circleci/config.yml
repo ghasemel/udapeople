@@ -442,15 +442,15 @@ jobs:
       - run:
           name: Backend smoke test
           command: |
-            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}`
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_2934d8a`
             echo $BACKEND_IP
             curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok\""
 
       - run:
           name: Frontend smoke test
           command: |
-            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text`
-            S3_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-${LOCATION}.amazonaws.com/index.html"
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-2934d8a --output text`
+            S3_URL="http://udapeople-2934d8a.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
             curl -s ${S3_URL} | grep "Welcome"
             
@@ -476,8 +476,8 @@ jobs:
             aws cloudformation deploy \
             --template-file .circleci/files/cloudfront.yml \
             --tags project=udapeople \
-            --stack-name "cloudfront-${CIRCLE_WORKFLOW_ID:0:7}" \
-            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}"
+            --stack-name "cloudfront-67wqteuq3ea76tu" \
+            --parameter-overrides WorkflowID="2934d8a"
 
       - slack-notification-fail
       #- revert-migrations
@@ -502,30 +502,30 @@ workflows:
 #      - scan-frontend:
 #          context: slack
 #          requires: [test-frontend]
-      - deploy-infrastructure:
-          context: slack
+#      - deploy-infrastructure:
+#          context: slack
 #          requires:
 #            - scan-backend
 #            - scan-frontend
 #            - test-backend
 #            - test-frontend
-      - configure-infrastructure:
-          context: slack
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          context: slack
-          requires: [ configure-infrastructure ]
-      - deploy-frontend:
-          context: slack
-          requires: [ run-migrations ]
-      - deploy-backend:
-          context: slack
-          requires: [ run-migrations ]
+#      - configure-infrastructure:
+#          context: slack
+#          requires: [deploy-infrastructure]
+#      - run-migrations:
+#          context: slack
+#          requires: [ configure-infrastructure ]
+#      - deploy-frontend:
+#          context: slack
+#          requires: [ run-migrations ]
+#      - deploy-backend:
+#          context: slack
+#          requires: [ run-migrations ]
       - smoke-test:
           context: slack
-          requires:
-            - deploy-frontend
-            - deploy-backend
+#          requires:
+#            - deploy-frontend
+#            - deploy-backend
       - cloudfront-update:
           context: slack
           requires: [ smoke-test ]
