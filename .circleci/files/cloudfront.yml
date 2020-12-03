@@ -5,7 +5,7 @@ Description: >
 #  aws cloudformation deploy \
 #  --template-file .circleci/files/cloudfront.yml \
 #  --tags project=udapeople \
-#  --stack-name "cloudfront-67wqteuq3ea76tu" \
+#  --stack-name "udapeople-cloudfront" \
 #  --parameter-overrides WorkflowID="67wqteuq3ea76tu"
 
 Parameters:

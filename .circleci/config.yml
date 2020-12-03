@@ -470,18 +470,62 @@ jobs:
             yum -y install jq tar gzip git curl
 
       - run:
+          name: Get old stack workflow id
+          command: |
+            # your code here
+            OldWorkflowID=$(aws cloudformation \
+                          list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+                          --no-paginate --output text)
+
+            curl -H "Content-Type: text/plain" -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
+                        --request PUT --data "${OldWorkflowID}" \
+                        https://api.memstash.io/values/OldWorkflowID_2934d8a
+
+      - run:
           name: Update cloudfront distribution
           command: |
             # update-cloudfront:
             aws cloudformation deploy \
             --template-file .circleci/files/cloudfront.yml \
             --tags project=udapeople \
-            --stack-name "cloudfront-67wqteuq3ea76tu" \
+            --stack-name "udapeople-cloudfront" \
             --parameter-overrides WorkflowID="2934d8a"
 
       - slack-notification-fail
       #- revert-migrations
       #- destroy-environment
+
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install jq tar gzip git curl
+      
+      - run:
+          name: Remove old stacks and files
+          command: |
+            # get old WorkFlowId            
+            export OldWorkflowID=$(curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/OldWorkflowID_2934d8a)
+            echo $OldWorkflowID
+
+            # get all stacks
+            export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+                              --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
+            echo $STACKS
+
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then        
+              echo $STACKS      
+              #aws s3 rm s3://udapeople-${OldWorkflowID} --recursive
+              #aws cloudformation delete-stack --stack-name backend-${OldWorkflowID}
+              #aws cloudformation delete-stack --stack-name frontend-${OldWorkflowID}
+            fi
+
+      - slack-notification-fail
 
 workflows:
   default:
@@ -521,11 +565,14 @@ workflows:
 #      - deploy-backend:
 #          context: slack
 #          requires: [ run-migrations ]
-      - smoke-test:
-          context: slack
+#      - smoke-test:
+#          context: slack
 #          requires:
 #            - deploy-frontend
 #            - deploy-backend
-      - cloudfront-update:
+#      - cloudfront-update:
+#          context: slack
+#          requires: [ smoke-test ]
+      - cleanup:
           context: slack
-          requires: [ smoke-test ]
+#          requires: [ cloudfront-update ]
