@@ -16,4 +16,4 @@
   shell: |
     cd ~/udapeople/
     npm i
-    pm2 start main.js --update-env
+    pm2 restart main.js --update-env
