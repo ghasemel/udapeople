@@ -522,32 +522,36 @@ jobs:
 workflows:
   default:
     jobs:
-#      - build-frontend:
-#          context: slack
-#      - build-backend:
-#          context: slack
-#      - test-frontend:
-#          context: slack
-#          requires: [build-frontend]
-#      - test-backend:
-#          context: slack
-#          requires: [build-backend]
-#      - scan-backend:
-#          context: slack
-#          requires: [test-backend]
-#      - scan-frontend:
-#          context: slack
-#          requires: [test-frontend]
+      - build-frontend:
+          context: slack
+      - build-backend:
+          context: slack
+      - test-frontend:
+          context: slack
+          requires: [build-frontend]
+      - test-backend:
+          context: slack
+          requires: [build-backend]      
+      - scan-frontend:
+          context: slack
+          requires: [build-frontend]
+      - scan-backend:
+          context: slack
+          requires: [build-backend]          
       - deploy-infrastructure:
           context: slack
-#          requires:
-#            - scan-backend
-#            - scan-frontend
-#            - test-backend
-#            - test-frontend
+          requires:
+            - scan-backend
+            - scan-frontend
+            - test-backend
+            - test-frontend
+          filters:
+              branches:
+                only:
+                  - master
       - configure-infrastructure:
           context: slack
-          requires: [deploy-infrastructure]
+          requires: [deploy-infrastructure]          
       - run-migrations:
           context: slack
           requires: [ configure-infrastructure ]
