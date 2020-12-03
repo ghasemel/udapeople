@@ -440,7 +440,7 @@ jobs:
           command: |
             BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_3e571a3`
             echo $BACKEND_IP
-            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok2\""
+            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok\""
       - run:
           name: Frontend smoke test
           command: |
@@ -451,8 +451,8 @@ jobs:
             
 
       - slack-notification-fail
-      #- revert-migrations
-      #- destroy-environment      
+      - revert-migrations
+      - destroy-environment
 
 #  #  deploy-infrastructure:
 #  cloudfront-update:
@@ -489,26 +489,26 @@ workflows:
 #      - scan-frontend:
 #          context: slack
 #          requires: [test-frontend]
-#      - deploy-infrastructure:
-#          context: slack
+      - deploy-infrastructure:
+          context: slack
 #          requires:
 #            - scan-backend
 #            - scan-frontend
 #            - test-backend
 #            - test-frontend
-#      - configure-infrastructure:
-#          context: slack
-#          requires: [deploy-infrastructure]
-#      - run-migrations:
-#          context: slack
-#          requires: [ configure-infrastructure ]
-#      - deploy-frontend:
-#          context: slack
-#          requires: [ run-migrations ]
-#
-#      - deploy-backend:
-#          context: slack
-#          requires: [ deploy-frontend ]
+      - configure-infrastructure:
+          context: slack
+          requires: [deploy-infrastructure]
+      - run-migrations:
+          context: slack
+          requires: [ configure-infrastructure ]
+      - deploy-frontend:
+          context: slack
+          requires: [ run-migrations ]
+
+      - deploy-backend:
+          context: slack
+          requires: [ deploy-frontend ]
       - smoke-test:
           context: slack
-#          requires: [ deploy-backend ]
+          requires: [ deploy-backend ]
