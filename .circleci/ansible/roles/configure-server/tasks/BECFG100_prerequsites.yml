@@ -33,7 +33,7 @@
     echo "export NODE_ENV=production" >> /etc/environment
     echo "export ENVIRONMENT=production" >> /etc/environment
     echo "export TYPEORM_CONNECTION={{ lookup('env', 'TYPEORM_CONNECTION') }}" >> /etc/environment
-    echo "export TYPEORM_ENTITIES=\"./modules/domain/**/.entity.{ts,js}"\" >> /etc/environment
+    echo "export TYPEORM_ENTITIES=\"./modules/domain/**/*.entity*.{ts,js}"\" >> /etc/environment
     echo "export TYPEORM_HOST={{ lookup('env', 'TYPEORM_HOST') }}" >> /etc/environment
     echo "export TYPEORM_PORT={{ lookup('env', 'TYPEORM_PORT') }}" >> /etc/environment
     echo "export TYPEORM_USERNAME={{ lookup('env', 'TYPEORM_USERNAME') }}" >> /etc/environment
