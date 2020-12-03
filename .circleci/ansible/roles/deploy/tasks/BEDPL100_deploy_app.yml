@@ -10,7 +10,7 @@
       pm2 stop main.js
     fi
 
-- name: "BEDPL100.03 stop previous execution"
+- name: "BEDPL100.03 remove previous deployment"
   become: true
   file: 
     path: ~/udapeople/ 
