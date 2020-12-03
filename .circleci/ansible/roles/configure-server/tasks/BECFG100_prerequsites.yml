@@ -21,7 +21,7 @@
   shell: |
     npm install pm2 -g
 
-- name: "BECFG100.05 Test for lines"
+- name: "BECFG100.05 check for environment variables"
   become_user: ubuntu
   shell: grep -c "^export TYPEORM_CONNECTION" /etc/environment || true
   register: test_grep

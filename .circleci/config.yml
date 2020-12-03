@@ -415,32 +415,28 @@ jobs:
 
   smoke-test:
     docker:
-      - image: alpine
+      - image: amazon/aws-cli
     steps:
 
       - run:
           name: Install dependencies
           command: |
-            apk --no-cache add jq tar gzip git curl
+            yum -y install jq tar gzip git curl
 
       - run:
           name: Backend smoke test
           command: |
             BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_3e571a3`
             echo $BACKEND_IP
-            curl -s https://${BACKEND_IP}:3030/api/status
+            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok\""
       - run:
           name: Frontend smoke test
           command: |
             LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
-            S3_URL="udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
+            S3_URL="http://udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
-            if curl -s ${S3_URL} | grep "Welcome";
-            then
-              return 1
-            else
-              return 0
-            fi
+            curl -s ${S3_URL} | grep "Welcome"
+            
 
       - slack-notification-fail
       # Here's where you will add some code to rollback on failure
