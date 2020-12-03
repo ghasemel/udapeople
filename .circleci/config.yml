@@ -378,6 +378,7 @@ jobs:
       - slack-notification-fail
       #- revert-migrations
       #- destroy-environment
+      
   deploy-backend:
     docker:
       - image: willhallonline/ansible:2.10-ubuntu-18.04

@@ -2,7 +2,21 @@
   become_user: ubuntu
   shell: mkdir -p ~/udapeople/
 
-- name: "BEDPL100.02 deploy backend app"
+- name: "BEDPL100.02 stop previous execution"
+  become_user: ubuntu
+  shell: |
+    cd ~/udapeople/    
+    if pm2 monitor main.js | grep "online"; then
+      pm2 stop main.js
+    fi
+
+- name: "BEDPL100.03 stop previous execution"
+  become: true
+  file: 
+    path: ~/udapeople/ 
+    state: absent
+
+- name: "BEDPL100.04 deploy backend app"
   become_user: ubuntu
   unarchive:
     src: ../../backend/app.tar.gz
@@ -11,9 +25,9 @@
     group: ubuntu
     mode: 0755
 
-- name: "BEDPL100.03 run backend app"
+- name: "BEDPL100.05 run backend app"
   become_user: ubuntu
   shell: |
     cd ~/udapeople/
-    npm i
-    pm2 restart main.js --update-env
+    npm i    
+    pm2 start main.js --update-env
