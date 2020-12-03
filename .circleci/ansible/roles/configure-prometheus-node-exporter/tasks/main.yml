@@ -1,10 +1,10 @@
-- name: "install node exporter."
+- name: "CPRCFG.001 install node exporter"
   unarchive:
     src: https://github.com/prometheus/node_exporter/releases/download/v0.17.0/node_exporter-0.17.0.linux-amd64.tar.gz
     dest: /tmp
     remote_src: yes
 
-- name: "move binary to /usr/local/bin."
+- name: "CPRCFG.002 move binary to /usr/local/bin"
   become: true
   copy:
     src: /tmp/node_exporter-0.17.0.linux-amd64/node_exporter
@@ -12,13 +12,13 @@
     remote_src: yes
     mode: '0777'
     
-- name: "add node exporter configuration."
+- name: "CPRCFG.003 add node exporter configuration"
   become: true
   copy:
     src: node_exporter.service
     dest: /etc/systemd/system/
 
-- name: "enable node_exporter service"
+- name: "CPRCFG.004 enable node_exporter service"
   become: true
   systemd:
     state: restarted

@@ -263,7 +263,7 @@ jobs:
             --tags project=udapeople \
             --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-# ${CIRCLE_WORKFLOW_ID:0:7}
+
       - destroy-environment
       - slack-notification-fail
 
@@ -432,8 +432,8 @@ jobs:
   smoke-test:
     docker:
       - image: amazon/aws-cli
-    steps:
 
+    steps:
       - run:
           name: Install dependencies
           command: |
@@ -444,7 +444,8 @@ jobs:
           command: |
             BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}`
             echo $BACKEND_IP
-            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"intentional error\""
+            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok\""
+
       - run:
           name: Frontend smoke test
           command: |
@@ -458,48 +459,56 @@ jobs:
       - revert-migrations
       - destroy-environment
 
-#  #  deploy-infrastructure:
-#  cloudfront-update:
-#    docker:
-#    # Docker image here that supports AWS CLI
-#    steps:
-#      # Checkout code from git
-#      - run:
-#          name: Install dependencies
-#          command: |
-#            # your code here
-#      - run:
-#          name: Update cloudfront distribution
-#          command: |
-#            # your code here
-#      # Here's where you will add some code to rollback on failure
+  cloudfront-update:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install jq tar gzip git curl
+
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            # update-cloudfront:
+            aws cloudformation deploy \
+            --template-file .circleci/files/cloudfront.yml \
+            --tags project=udapeople \
+            --stack-name "cloudfront-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}"
+
+      - slack-notification-fail
+      #- revert-migrations
+      #- destroy-environment
 
 workflows:
   default:
     jobs:
-      - build-frontend:
-          context: slack
-      - build-backend:
-          context: slack
-      - test-frontend:
-          context: slack
-          requires: [build-frontend]
-      - test-backend:
-          context: slack
-          requires: [build-backend]
-      - scan-backend:
-          context: slack
-          requires: [test-backend]
-      - scan-frontend:
-          context: slack
-          requires: [test-frontend]
+#      - build-frontend:
+#          context: slack
+#      - build-backend:
+#          context: slack
+#      - test-frontend:
+#          context: slack
+#          requires: [build-frontend]
+#      - test-backend:
+#          context: slack
+#          requires: [build-backend]
+#      - scan-backend:
+#          context: slack
+#          requires: [test-backend]
+#      - scan-frontend:
+#          context: slack
+#          requires: [test-frontend]
       - deploy-infrastructure:
           context: slack
-          requires:
-            - scan-backend
-            - scan-frontend
-            - test-backend
-            - test-frontend
+#          requires:
+#            - scan-backend
+#            - scan-frontend
+#            - test-backend
+#            - test-frontend
       - configure-infrastructure:
           context: slack
           requires: [deploy-infrastructure]
@@ -517,3 +526,6 @@ workflows:
           requires:
             - deploy-frontend
             - deploy-backend
+      - cloudfront-update:
+          context: slack
+          requires: [ smoke-test ]
