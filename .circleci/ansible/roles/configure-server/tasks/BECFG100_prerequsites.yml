@@ -23,21 +23,20 @@
 
 - name: "BECFG100.05 Test for lines"
   become_user: ubuntu
-  shell: grep -c "^export TYPEORM_CONNECTION" /home/ubuntu/.bashrc || true
+  shell: grep -c "^export TYPEORM_CONNECTION" /etc/environment || true
   register: test_grep
 
 - name: "BECFG100.06 set environment variables"
-  become_user: ubuntu
+  become: true
   shell: |
-    echo "# environment variables for udapeople" >> /home/ubuntu/.bashrc
-    echo "export NODE_ENV=production" >> /home/ubuntu/.bashrc
-    echo "export ENVIRONMENT=production" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_CONNECTION={{ lookup('env', 'TYPEORM_CONNECTION') }}" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_ENTITIES=\"./modules/domain/**/.entity.{ts,js}"\" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_HOST={{ lookup('env', 'TYPEORM_HOST') }}" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_PORT={{ lookup('env', 'TYPEORM_PORT') }}" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_USERNAME={{ lookup('env', 'TYPEORM_USERNAME') }}" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_PASSWORD={{ lookup('env', 'TYPEORM_PASSWORD') }}" >> /home/ubuntu/.bashrc
-    echo "export TYPEORM_DATABASE={{ lookup('env', 'TYPEORM_DATABASE') }}" >> /home/ubuntu/.bashrc
-    source ~/.bashrc
+    echo "# environment variables for udapeople" >> /etc/environment
+    echo "export NODE_ENV=production" >> /etc/environment
+    echo "export ENVIRONMENT=production" >> /etc/environment
+    echo "export TYPEORM_CONNECTION={{ lookup('env', 'TYPEORM_CONNECTION') }}" >> /etc/environment
+    echo "export TYPEORM_ENTITIES=\"./modules/domain/**/.entity.{ts,js}"\" >> /etc/environment
+    echo "export TYPEORM_HOST={{ lookup('env', 'TYPEORM_HOST') }}" >> /etc/environment
+    echo "export TYPEORM_PORT={{ lookup('env', 'TYPEORM_PORT') }}" >> /etc/environment
+    echo "export TYPEORM_USERNAME={{ lookup('env', 'TYPEORM_USERNAME') }}" >> /etc/environment
+    echo "export TYPEORM_PASSWORD={{ lookup('env', 'TYPEORM_PASSWORD') }}" >> /etc/environment
+    echo "export TYPEORM_DATABASE={{ lookup('env', 'TYPEORM_DATABASE') }}" >> /etc/environment
   when: test_grep.stdout == "0"
