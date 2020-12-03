@@ -11,8 +11,8 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name backend-3e571a3
-            aws cloudformation delete-stack --stack-name frontend-3e571a3
+            aws cloudformation delete-stack --stack-name backend-${CIRCLE_WORKFLOW_ID:0:7}
+            aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
             exit 0
 
   extract-commit-message:
@@ -72,12 +72,15 @@ commands:
       #parameters:
     # Add parameter here
     steps:
+      - restore_cache:
+          key: v1-backend-build
+          
       - run:
           name: Revert migrations
           when: on_fail
           command: |
             # Curl command here to see if there was a successful migration associated with the workflow id, store result in SUCCESS variable
-            SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_3e571a3`
+            SUCCESS=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}`
             if [[ $SUCCESS == 1 ]];
             then
               cd ~/project/backend
@@ -96,8 +99,8 @@ commands:
 #          when: on_fail
 #          command: |
 #            cd frontend
-#            aws s3 rm s3://udapeople-3e571a3 --recursive
-#            aws s3 cp ./backup-${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-3e571a3 --recursive
+#            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+#            aws s3 cp ./backup-$${CIRCLE_WORKFLOW_ID:0:7}/ s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
 
 jobs:
   build-frontend:
@@ -226,13 +229,13 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople \
-              --stack-name "backend-3e571a3" \
-              --parameter-overrides ID="3e571a3"
+              --stack-name "backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID=${CIRCLE_WORKFLOW_ID:0:7}
       - run:
           name: Add backend ip to ansible inventory
           command: |
             BACKEND_IP=`aws ec2 describe-instances \
-              --filters "Name=tag:Name,Values=backend-3e571a3" \
+              --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --query "Reservations[*].Instances[*].[PublicDnsName]" \
               --output text`
 
@@ -243,7 +246,7 @@ jobs:
             curl -H "Content-Type: text/plain" \
               -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
               --request PUT \
-              --data "$BACKEND_IP" https://api.memstash.io/values/BACKEND_IP_3e571a3
+              --data "$BACKEND_IP" https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}
 
       - persist_to_workspace:
           root: ~/
@@ -257,9 +260,9 @@ jobs:
             aws cloudformation deploy \
             --template-file .circleci/files/frontend.yml \
             --tags project=udapeople \
-            --stack-name "frontend-3e571a3" \
-            --parameter-overrides ID="3e571a3"
-# {CIRCLE_WORKFLOW_ID:0:7}
+            --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+            --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+# ${CIRCLE_WORKFLOW_ID:0:7}
       - destroy-environment
       - slack-notification-fail
 
@@ -327,7 +330,7 @@ jobs:
               # put it in the shared memory
               curl -H "Content-Type: text/plain" \
                -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
-               --request PUT --data "1" https://api.memstash.io/values/migration_3e571a3
+               --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
             fi
       - slack-notification-fail
       #- revert-migrations
@@ -347,7 +350,7 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_3e571a3`
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}`
             export API_URL="http://${BACKEND_IP}:3030"
             echo "${API_URL}"
 
@@ -363,17 +366,17 @@ jobs:
           command: |
             cd frontend
             # deploy to s3 bucket
-            aws s3 cp ./dist s3://udapeople-3e571a3 --recursive
+            aws s3 cp ./dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
 
       - run:
           name: Create S3 bucket url
           command: |
-            LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
-            S3_URL="udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text`
+            S3_URL="udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
             curl -H "Content-Type: text/plain" -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
             --request PUT --data "$S3_URL" \
-            https://api.memstash.io/values/S3_URL_3e571a3
+            https://api.memstash.io/values/S3_URL_${CIRCLE_WORKFLOW_ID:0:7}
 
       - slack-notification-fail
       #- revert-migrations
@@ -438,14 +441,14 @@ jobs:
       - run:
           name: Backend smoke test
           command: |
-            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_3e571a3`
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}`
             echo $BACKEND_IP
-            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"ok\""
+            curl -s http://${BACKEND_IP}:3030/api/status | grep "\"status\":\"intentional error\""
       - run:
           name: Frontend smoke test
           command: |
-            LOCATION=`aws s3api get-bucket-location --bucket udapeople-3e571a3 --output text`
-            S3_URL="http://udapeople-3e571a3.s3-${LOCATION}.amazonaws.com/index.html"
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text`
+            S3_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
             curl -s ${S3_URL} | grep "Welcome"
             
@@ -473,29 +476,29 @@ jobs:
 workflows:
   default:
     jobs:
-#      - build-frontend:
-#          context: slack
-#      - build-backend:
-#          context: slack
-#      - test-frontend:
-#          context: slack
-#          requires: [build-frontend]
-#      - test-backend:
-#          context: slack
-#          requires: [build-backend]
-#      - scan-backend:
-#          context: slack
-#          requires: [test-backend]
-#      - scan-frontend:
-#          context: slack
-#          requires: [test-frontend]
+      - build-frontend:
+          context: slack
+      - build-backend:
+          context: slack
+      - test-frontend:
+          context: slack
+          requires: [build-frontend]
+      - test-backend:
+          context: slack
+          requires: [build-backend]
+      - scan-backend:
+          context: slack
+          requires: [test-backend]
+      - scan-frontend:
+          context: slack
+          requires: [test-frontend]
       - deploy-infrastructure:
           context: slack
-#          requires:
-#            - scan-backend
-#            - scan-frontend
-#            - test-backend
-#            - test-frontend
+          requires:
+            - scan-backend
+            - scan-frontend
+            - test-backend
+            - test-frontend
       - configure-infrastructure:
           context: slack
           requires: [deploy-infrastructure]
@@ -505,10 +508,11 @@ workflows:
       - deploy-frontend:
           context: slack
           requires: [ run-migrations ]
-
       - deploy-backend:
           context: slack
-          requires: [ deploy-frontend ]
+          requires: [ run-migrations ]
       - smoke-test:
           context: slack
-          requires: [ deploy-backend ]
+          requires:
+            - deploy-frontend
+            - deploy-backend
