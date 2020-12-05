@@ -104,6 +104,11 @@ jobs:
       - checkout
 
       - run:
+          name: Install prerequsites
+          command: |            
+            sudo apt -y install jq tar gzip git curl
+
+      - run:
           name: Frontend Build
           command: |
             cd frontend
@@ -122,6 +127,12 @@ jobs:
 
     steps:
       - checkout
+
+      - run:
+          name: Install prerequsites
+          command: |
+            sudo apt -y install jq tar gzip git curl
+
       - run:
           name: Backend build
           command: |
@@ -142,6 +153,11 @@ jobs:
     steps:
       - checkout
 
+      - run:
+          name: Install prerequsites
+          command: |
+            sudo apt -y install jq tar gzip git curl
+
       - restore_cache:
           key: v1-frontend-build
 
@@ -160,6 +176,11 @@ jobs:
     steps:
       - checkout
 
+      - run:
+          name: Install prerequsites
+          command: |
+            sudo apt -y install jq tar gzip git curl
+
       - restore_cache:
           key: v1-backend-build
 
@@ -177,6 +198,11 @@ jobs:
     steps:
       - checkout
 
+      - run:
+          name: Install prerequsites
+          command: |
+            sudo apt -y install jq tar gzip git curl
+
       - restore_cache:
           key: v1-frontend-build
 
@@ -193,6 +219,11 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+
+      - run:
+          name: Install prerequsites
+          command: |
+            sudo apt -y install jq tar gzip git curl   
 
       - restore_cache:
           key: v1-backend-build
@@ -256,9 +287,9 @@ jobs:
             --tags project=udapeople \
             --stack-name "frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
             --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
-
-      - destroy-environment
+      
       - slack-notification-fail
+      - destroy-environment
 
   configure-infrastructure:
     docker:
@@ -273,7 +304,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt update
+            apt -y update
             apt -y install jq tar gzip git curl
 
       - attach_workspace:
@@ -289,8 +320,9 @@ jobs:
           command: |
             cd ~/project/.circleci/ansible
             ansible-playbook configure-server.yml --inventory-file=inventory.txt
-
+            
       - slack-notification-fail
+      - destroy-environment
 
   run-migrations:
     docker:
@@ -326,6 +358,7 @@ jobs:
                -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
                --request PUT --data "1" https://api.memstash.io/values/migration_${CIRCLE_WORKFLOW_ID:0:7}
             fi
+            
       - slack-notification-fail
       - revert-migrations
       - destroy-environment      
@@ -389,7 +422,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apt update
+            apt -y update
             apt -y install jq tar gzip git curl
             curl -sL https://deb.nodesource.com/setup_12.x | bash -
             apt -y install nodejs
