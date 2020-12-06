@@ -262,7 +262,7 @@ jobs:
             BACKEND_IP=`aws ec2 describe-instances \
               --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --query "Reservations[*].Instances[*].[PublicDnsName]" \
-              --output text`
+              --output text | tr -d '\n'`
 
             echo $BACKEND_IP >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
@@ -389,22 +389,31 @@ jobs:
 
       - run:
           name: Build frontend
-          command: |
+          command: |            
             cd frontend
             npm i
-            npm run build
+
+            BACKEND_IP=`curl -H "token: e38aee29-a976-4696-843d-2d115c52219a" --request GET https://api.memstash.io/values/BACKEND_IP_${CIRCLE_WORKFLOW_ID:0:7}`
+            export API_URL="http://${BACKEND_IP}:3030"
+            export NODE_ENV=production
+
+            #npm install webpack
+            #npm install webpack-cli
+            npm run build:prod
 
       - run:
           name: Deploy frontend objects
           command: |
             cd frontend
+            #cp -r node_modules ./dist/
+            cp .env ./dist/
             # deploy to s3 bucket
             aws s3 cp ./dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
 
       - run:
           name: Create S3 bucket url
           command: |
-            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text`
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text | tr -d '\n'`
             S3_URL="udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
             curl -H "Content-Type: text/plain" -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
@@ -446,6 +455,7 @@ jobs:
           command: |
             cd backend
             npm i
+            #export NODE_ENV=production
             npm run build
             cp package* ./dist
             cd dist
@@ -481,7 +491,7 @@ jobs:
       - run:
           name: Frontend smoke test
           command: |
-            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text`
+            LOCATION=`aws s3api get-bucket-location --bucket udapeople-${CIRCLE_WORKFLOW_ID:0:7} --output text | tr -d '\n'`
             S3_URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-${LOCATION}.amazonaws.com/index.html"
             echo $S3_URL
             curl -s ${S3_URL} | grep "Welcome"
@@ -507,7 +517,7 @@ jobs:
             # your code here
             OldWorkflowID=$(aws cloudformation \
                           list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-                          --no-paginate --output text)
+                          --no-paginate --output text | tr -d '\n')
 
             curl -H "Content-Type: text/plain" -H "token: e38aee29-a976-4696-843d-2d115c52219a" \
                         --request PUT --data "${OldWorkflowID}" \
@@ -546,7 +556,7 @@ jobs:
 
             # get all stacks
             export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-                              --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
+                              --stack-status-filter CREATE_COMPLETE --no-paginate --output text | tr -d '\n')
             echo $STACKS
 
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
@@ -570,7 +580,7 @@ workflows:
           requires: [build-frontend]
       - test-backend:
           context: slack
-          requires: [build-backend]      
+          requires: [build-backend]
       - scan-frontend:
           context: slack
           requires: [build-frontend]
@@ -594,12 +604,12 @@ workflows:
       - run-migrations:
           context: slack
           requires: [ configure-infrastructure ]
-      - deploy-frontend:
-          context: slack
-          requires: [ run-migrations ]
       - deploy-backend:
           context: slack
           requires: [ run-migrations ]
+      - deploy-frontend:
+          context: slack
+          requires: [ deploy-backend ]
       - smoke-test:
           context: slack
           requires:
